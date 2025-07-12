@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Bell, User, LogOut } from 'lucide-react';
+import { Search, Plus, Bell, LogOut } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
@@ -27,7 +27,7 @@ export function Header({ onAskQuestion, searchQuery, onSearchChange }: HeaderPro
     if (debouncedSearchQuery !== searchQuery) {
       onSearchChange(debouncedSearchQuery);
     }
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, searchQuery, onSearchChange]);
 
   const handleSignOut = async () => {
     try {

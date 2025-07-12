@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
@@ -60,16 +61,7 @@ export function Toast({ id, type, title, message, duration = 5000, onClose }: To
 }
 
 export function ToastContainer() {
-  const [toasts, setToasts] = React.useState<ToastProps[]>([]);
-
-  const addToast = React.useCallback((toast: Omit<ToastProps, 'id' | 'onClose'>) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { ...toast, id, onClose: removeToast }]);
-  }, []);
-
-  const removeToast = React.useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  const [toasts] = React.useState<ToastProps[]>([]);
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">

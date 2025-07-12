@@ -1,12 +1,11 @@
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
 
 export function initMonitoring() {
   if (import.meta.env.PROD) {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
       integrations: [
-        new BrowserTracing(),
+        Sentry.browserTracingIntegration(),
       ],
       tracesSampleRate: 1.0,
       environment: import.meta.env.MODE,
@@ -14,7 +13,7 @@ export function initMonitoring() {
   }
 }
 
-export function logError(error: Error, context?: Record<string, any>) {
+export function logError(error: Error, context?: Record<string, unknown>) {
   console.error('Application Error:', error);
   
   if (import.meta.env.PROD) {

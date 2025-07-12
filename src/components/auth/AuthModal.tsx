@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -34,8 +33,9 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
       await signIn(data.email, data.password);
       toast.success('Signed in successfully!');
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -47,8 +47,9 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
       await signUp(data.email, data.password, data.displayName);
       toast.success('Account created successfully!');
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

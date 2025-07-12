@@ -28,7 +28,7 @@ export function AskQuestionModal({ isOpen, onClose, onSuccess }: AskQuestionModa
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const { control, register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<QuestionData>({
+  const { control, register, handleSubmit, formState: { errors }, reset } = useForm<QuestionData>({
     resolver: zodResolver(questionSchema),
     defaultValues: {
       title: '',
@@ -95,8 +95,9 @@ export function AskQuestionModal({ isOpen, onClose, onSuccess }: AskQuestionModa
       reset();
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to post question');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to post question';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

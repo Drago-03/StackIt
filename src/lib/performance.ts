@@ -1,13 +1,13 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 
 // Performance monitoring
 export function initPerformanceMonitoring() {
   // Core Web Vitals
-  getCLS(console.log);
-  getFID(console.log);
-  getFCP(console.log);
-  getLCP(console.log);
-  getTTFB(console.log);
+  onCLS(console.log);
+  onINP(console.log); // onFID has been replaced with onINP in newer versions
+  onFCP(console.log);
+  onLCP(console.log);
+  onTTFB(console.log);
 
   // Custom performance marks
   performance.mark('app-start');
@@ -36,7 +36,7 @@ export function createIntersectionObserver(
 }
 
 // Debounce utility for search
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -48,7 +48,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle utility for scroll events
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {

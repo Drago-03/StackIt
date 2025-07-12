@@ -35,6 +35,11 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    editorProps: {
+      attributes: {
+        'data-placeholder': placeholder || 'Start writing...',
+      },
+    },
   });
 
   if (!editor) {

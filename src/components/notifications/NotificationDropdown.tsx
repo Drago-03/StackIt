@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,13 +23,7 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && profile) {
-      fetchNotifications();
-    }
-  }, [isOpen, profile]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!profile) return;
 
     setLoading(true);
@@ -48,7 +42,13 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    if (isOpen && profile) {
+      fetchNotifications();
+    }
+  }, [isOpen, profile, fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

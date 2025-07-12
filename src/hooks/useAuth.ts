@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { generateAvatar } from '@/lib/avatar';
 
 export interface Profile {
   id: string;
@@ -18,59 +17,15 @@ export function useAuth() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
+  const createProfile = useCallback(async (user: User) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create one
-        const user = await supabase.auth.getUser();
-        if (user.data.user) {
-          await createProfile(user.data.user);
-        }
-      } else if (data) {
-        setProfile(data);
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+        console.warn('Supabase not configured. Skipping profile creation.');
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const createProfile = async (user: User) => {
-    try {
       const avatarSeed = Math.random().toString(36).substring(7);
       const displayName = user.email?.split('@')[0] || 'User';
 
@@ -86,12 +41,104 @@ export function useAuth() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If it's a conflict error (409), the profile might already exist
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          console.log('Profile already exists, fetching existing profile...');
+          // Try to fetch the existing profile
+          const { data: existingProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (!fetchError && existingProfile) {
+            setProfile(existingProfile);
+            return;
+          }
+        }
+        throw error;
+      }
       setProfile(data);
-    } catch (error) {
-      console.error('Error creating profile:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error creating profile:', errorMessage, error);
     }
-  };
+  }, []);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+        console.warn('Supabase not configured. Skipping profile fetch.');
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create one
+        const user = await supabase.auth.getUser();
+        if (user.data.user) {
+          await createProfile(user.data.user);
+        }
+      } else if (error) {
+        console.error('Error fetching profile:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+      } else if (data) {
+        setProfile(data);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error fetching profile:', errorMessage, error);
+    } finally {
+      setLoading(false);
+    }
+  }, [createProfile]);
+
+  useEffect(() => {
+    // Check if Supabase is properly configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      console.warn('Supabase not configured. Auth disabled.');
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
 
   const signUp = async (email: string, password: string, displayName: string) => {
     const { data, error } = await supabase.auth.signUp({

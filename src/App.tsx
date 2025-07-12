@@ -10,6 +10,7 @@ import { QuestionDetail } from '@/components/questions/QuestionDetail';
 import { AskQuestionModal } from '@/components/questions/AskQuestionModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useSupabaseStatus } from '@/hooks/useSupabaseStatus';
 import { supabase } from '@/lib/supabase';
 import { initPerformanceMonitoring, markPerformance } from '@/lib/performance';
 import { initMonitoring } from '@/lib/monitoring';
@@ -74,6 +75,16 @@ function App() {
   // Use debounced search for better performance
   const fetchQuestions = async () => {
     try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+        console.warn('Supabase not configured. Using mock data.');
+        // Set mock data for development
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('questions')
         .select(`
@@ -87,10 +98,21 @@ function App() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
       setQuestions(data || []);
-    } catch (error) {
-      console.error('Error fetching questions:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error fetching questions:', errorMessage, error);
+      // For now, set empty array to prevent crash
+      setQuestions([]);
     } finally {
       setLoading(false);
     }

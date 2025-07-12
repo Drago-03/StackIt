@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Eye, MessageCircle, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Eye, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -59,13 +59,7 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [answerContent, setAnswerContent] = useState('');
 
-  useEffect(() => {
-    fetchQuestion();
-    fetchAnswers();
-    incrementViewCount();
-  }, [questionId]);
-
-  const fetchQuestion = async () => {
+  const fetchQuestion = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('questions')
@@ -88,9 +82,9 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [questionId]);
 
-  const fetchAnswers = async () => {
+  const fetchAnswers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('answers')
@@ -128,15 +122,21 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
     } catch (error) {
       console.error('Error fetching answers:', error);
     }
-  };
+  }, [questionId, profile]);
 
-  const incrementViewCount = async () => {
+  const incrementViewCount = useCallback(async () => {
     try {
       await supabase.rpc('increment_question_views', { question_uuid: questionId });
     } catch (error) {
       console.error('Error incrementing view count:', error);
     }
-  };
+  }, [questionId]);
+
+  useEffect(() => {
+    fetchQuestion();
+    fetchAnswers();
+    incrementViewCount();
+  }, [questionId, fetchQuestion, fetchAnswers, incrementViewCount]);
 
   const submitAnswer = async () => {
     if (!profile || !answerContent.trim()) return;
@@ -156,8 +156,9 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
       toast.success('Answer submitted successfully!');
       setAnswerContent('');
       fetchAnswers();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit answer');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit answer';
+      toast.error(errorMessage);
     } finally {
       setSubmittingAnswer(false);
     }
@@ -200,8 +201,9 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
       }
 
       fetchAnswers();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to vote');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to vote';
+      toast.error(errorMessage);
     }
   };
 
@@ -231,8 +233,9 @@ export function QuestionDetail({ questionId, onBack }: QuestionDetailProps) {
       toast.success('Answer accepted!');
       fetchQuestion();
       fetchAnswers();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to accept answer');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to accept answer';
+      toast.error(errorMessage);
     }
   };
 
